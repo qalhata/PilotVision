@@ -16,6 +16,25 @@ from sklearn.neural_network import MLPRegressor
 # Set Streamlit configurations
 # st.set_option('deprecation.showPyplotGlobalUse', False)
 
+# Set the app title at the top of the app
+st.title("PilotVision Dashboard")
+
+# Optional: Add a subtitle or description
+st.subheader("An eye-tracking analysis tool for ECAM, EFIS, and PFD displays")
+
+# Custom CSS for background color
+st.markdown(
+    """
+    <style>
+    /* Set the background color */
+    .main {
+        background-color: #e0f7fa;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -51,30 +70,34 @@ verify_data_availability(fixdataPfd, "PFD")
 verify_data_availability(fixdataEfis, "EFIS")
 
 # Plotting Functions
+# Fixation Duration Distribution Plot
 def plot_fixation_distribution(data, title):
-    plt.figure(figsize=(10, 6))
-    sns.histplot(data['duration [ms]'], kde=True, color="skyblue")
-    plt.title(title)
-    plt.xlabel("Fixation Duration (ms)")
-    plt.ylabel("Frequency")
-    st.pyplot()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.histplot(data['duration [ms]'], kde=True, color="skyblue", ax=ax)
+    ax.set_title(title)
+    ax.set_xlabel("Fixation Duration (ms)")
+    ax.set_ylabel("Frequency")
+    st.pyplot(fig)
 
+# Fixation Duration Over Time Plot
 def plot_fixation_time_series(data, title):
     data['start_time'] = pd.to_datetime(data['start timestamp [ns]'], unit='ns')
-    plt.figure(figsize=(12, 6))
-    sns.lineplot(x=data['start_time'], y=data['duration [ms]'], color="blue")
-    plt.title(title)
-    plt.xlabel("Time")
-    plt.ylabel("Fixation Duration (ms)")
-    st.pyplot()
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.lineplot(x=data['start_time'], y=data['duration [ms]'], color="blue", ax=ax)
+    ax.set_title(title)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Fixation Duration (ms)")
+    st.pyplot(fig)
 
+# Heatmap of Fixation Focus
 def plot_fixation_heatmap(data, title):
-    plt.figure(figsize=(8, 6))
-    sns.kdeplot(x=data['fixation x [normalized]'], y=data['fixation y [normalized]'], cmap="Reds", shade=True, bw_adjust=0.5)
-    plt.title(title)
-    plt.xlabel("X Coordinate [Normalized]")
-    plt.ylabel("Y Coordinate [Normalized]")
-    st.pyplot()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.kdeplot(x=data['fixation x [normalized]'], y=data['fixation y [normalized]'],
+                cmap="Reds", shade=True, bw_adjust=0.5, ax=ax)
+    ax.set_title(title)
+    ax.set_xlabel("X Coordinate [Normalized]")
+    ax.set_ylabel("Y Coordinate [Normalized]")
+    st.pyplot(fig)
 
 # Dashboard Function for Dataset Analysis
 def display_dashboard(dataset_name):
