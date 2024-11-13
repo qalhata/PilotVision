@@ -21,7 +21,6 @@ from sklearn.neural_network import MLPRegressor
 # fixdataEcam, fixdataPfd, fixdataEfis = load_data()
 
 # Load data from Azure Blob Storage - v2
-
 # Set up connection to Azure Blob Storage
 connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 if not connection_string:
