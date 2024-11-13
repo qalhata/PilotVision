@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -19,6 +20,9 @@ from sklearn.neural_network import MLPRegressor
      #return fixdataEcam, fixdataPfd, fixdataEfis
 
 # fixdataEcam, fixdataPfd, fixdataEfis = load_data()
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Load data from Azure Blob Storage - v2
 # Set up connection to Azure Blob Storage
