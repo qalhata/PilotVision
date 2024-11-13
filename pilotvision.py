@@ -1,13 +1,16 @@
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
+from azure.storage.blob import BlobServiceClient
+from io import StringIO
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import Normalizer
 from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
 
-# Load data
+# Load data from local- v1
 @st.cache_data
 def load_data():
     fixdataEcam = pd.read_csv("D:\\PilotVision_Proj\\fixdataEcam.csv")  # Update with your actual path
@@ -16,6 +19,52 @@ def load_data():
     return fixdataEcam, fixdataPfd, fixdataEfis
 
 fixdataEcam, fixdataPfd, fixdataEfis = load_data()
+
+
+# Load data from Azure Blob Storage - v2
+
+# Set up connection to Azure Blob Storage
+connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+
+# Initializing BlobServiceClient with connection string
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+
+# Data Availability Check
+def verify_data_availability(data, name):
+    if data.empty:
+        st.warning(f"{name} data is not available or failed to load.")
+    else:
+        st.success(f"{name} data loaded successfully with {len(data)} records.")
+
+verify_data_availability(fixdataEcam, "ECAM")
+verify_data_availability(fixdataPfd, "PFD")
+verify_data_availability(fixdataEfis, "EFIS")
+
+
+def load_data_from_blob(blob_name):
+    container_name = "pilotvisiondata"
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    data = blob_client.download_blob().readall()
+    return pd.read_csv(StringIO(data.decode('utf-8')))
+
+# Load datasets from Azure Blob Storage
+fixdataEcam = load_data_from_blob("fixdataEcam.csv")
+fixdataPfd = load_data_from_blob("fixdataPfd.csv")
+fixdataEfis = load_data_from_blob("fixdataEfis.csv")
+
+
+# Data upload status check
+def load_data_from_blob_safe(blob_name):
+    try:
+        return load_data_from_blob(blob_name)
+    except Exception as e:
+        st.error(f"Could not load {blob_name}: {e}")
+        return pd.DataFrame()  # Return empty DataFrame on error
+
+fixdataEcam = load_data_from_blob_safe("fixdataEcam.csv")
+fixdataPfd = load_data_from_blob_safe("fixdataPfd.csv")
+fixdataEfis = load_data_from_blob_safe("fixdataEfis.csv")
+
 
 # Combine data for different surfaces
 ecam_pipe = fixdataEcam[["duration [ms]"]].rename(columns={"duration [ms]": "ECAM"})
