@@ -34,7 +34,7 @@ if not connection_string:
 
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
-# Function to load a CSV from Azure Blob Storage
+# Function to load CSV from Azure Blob Storage
 def load_data_from_blob(blob_name):
     container_name = "pilotvisiondata" 
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
@@ -42,7 +42,7 @@ def load_data_from_blob(blob_name):
     data = download_stream.readall()
     return pd.read_csv(StringIO(data.decode('utf-8')))  # Adjust encoding as needed
 
-# Load datasets from Azure Blob Storage
+# Loading datasets from Azure Blob Storage
 fixdataEcam = load_data_from_blob("fixdataEcam.csv")
 fixdataPfd = load_data_from_blob("fixdataPfd.csv")
 fixdataEfis = load_data_from_blob("fixdataEfis.csv")
