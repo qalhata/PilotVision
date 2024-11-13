@@ -21,21 +21,8 @@ from sklearn.metrics import mean_squared_error, r2_score
 # Set the app title at the top of the app
 st.title("PilotVision Dashboard")
 
-# Optional: Add a subtitle or description
+# Description
 st.subheader("An eye-tracking analysis tool for ECAM, EFIS, and PFD displays")
-
-# Custom CSS for background color
-st.markdown(
-    """
-    <style>
-    /* Set the background color */
-    .main {
-        background-color: #e0f7fa;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # Load environment variables from .env file
 load_dotenv()
