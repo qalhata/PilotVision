@@ -5,32 +5,25 @@ import pandas as pd
 import numpy as np
 from azure.storage.blob import BlobServiceClient
 from io import StringIO
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import Normalizer
 from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
 
-# Load data from local- v1
-# @st.cache_data
-# def load_data():
-    # fixdataEcam = pd.read_csv("D:\\PilotVision_Proj\\fixdataEcam.csv")  # Update with your actual path
-    # fixdataPfd = pd.read_csv("D:\\PilotVision_Proj\\fixdataPfd.csv")    #      ""
-    # fixdataEfis = pd.read_csv("D:\\PilotVision_Proj\\fixdataEfis.csv")  #      ""
-     #return fixdataEcam, fixdataPfd, fixdataEfis
-
-# fixdataEcam, fixdataPfd, fixdataEfis = load_data()
+# Set Streamlit configurations
+st.set_option('deprecation.showPyplotGlobalUse', False)
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Load data from Azure Blob Storage - v2
 # Set up connection to Azure Blob Storage
 connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 if not connection_string:
     raise ValueError("AZURE_STORAGE_CONNECTION_STRING environment variable is not set or is empty.")
 
-# Initializing BlobServiceClient with connection string
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 # Function to load a CSV from Azure Blob Storage
@@ -41,15 +34,12 @@ def load_data_from_blob(blob_name):
     data = download_stream.readall()
     return pd.read_csv(StringIO(data.decode('utf-8')))  # Adjust encoding as needed
 
-# Example usage in the Streamlit app
-st.title("PilotVision Data Analysis")
-
 # Load datasets from Azure Blob Storage
 fixdataEcam = load_data_from_blob("fixdataEcam.csv")
 fixdataPfd = load_data_from_blob("fixdataPfd.csv")
 fixdataEfis = load_data_from_blob("fixdataEfis.csv")
 
-# Data Availability Check
+# Verify data availability
 def verify_data_availability(data, name):
     if data.empty:
         st.warning(f"{name} data is not available or failed to load.")
@@ -60,28 +50,61 @@ verify_data_availability(fixdataEcam, "ECAM")
 verify_data_availability(fixdataPfd, "PFD")
 verify_data_availability(fixdataEfis, "EFIS")
 
+# Plotting Functions
+def plot_fixation_distribution(data, title):
+    plt.figure(figsize=(10, 6))
+    sns.histplot(data['duration [ms]'], kde=True, color="skyblue")
+    plt.title(title)
+    plt.xlabel("Fixation Duration (ms)")
+    plt.ylabel("Frequency")
+    st.pyplot()
 
-# Data upload status check
-def load_data_from_blob_safe(blob_name):
-    try:
-        return load_data_from_blob(blob_name)
-    except Exception as e:
-        st.error(f"Could not load {blob_name}: {e}")
-        return pd.DataFrame()  # Return empty DataFrame on error
+def plot_fixation_time_series(data, title):
+    data['start_time'] = pd.to_datetime(data['start timestamp [ns]'], unit='ns')
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(x=data['start_time'], y=data['duration [ms]'], color="blue")
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel("Fixation Duration (ms)")
+    st.pyplot()
 
-fixdataEcam = load_data_from_blob_safe("fixdataEcam.csv")
-fixdataPfd = load_data_from_blob_safe("fixdataPfd.csv")
-fixdataEfis = load_data_from_blob_safe("fixdataEfis.csv")
+def plot_fixation_heatmap(data, title):
+    plt.figure(figsize=(8, 6))
+    sns.kdeplot(x=data['fixation x [normalized]'], y=data['fixation y [normalized]'], cmap="Reds", shade=True, bw_adjust=0.5)
+    plt.title(title)
+    plt.xlabel("X Coordinate [Normalized]")
+    plt.ylabel("Y Coordinate [Normalized]")
+    st.pyplot()
 
+# Dashboard Function for Dataset Analysis
+def display_dashboard(dataset_name):
+    if dataset_name == "ECAM":
+        st.write("### ECAM Dataset Analysis")
+        st.write("This analysis helps reveal pilot attention distribution on the Engine and Centralized Aircraft Monitoring (ECAM) display.")
+        plot_fixation_distribution(fixdataEcam, "ECAM Fixation Duration Distribution")
+        plot_fixation_time_series(fixdataEcam, "ECAM Fixation Duration Over Time")
+        plot_fixation_heatmap(fixdataEcam, "ECAM Fixation Focus Heatmap")
+        
+    elif dataset_name == "EFIS":
+        st.write("### EFIS Dataset Analysis")
+        st.write("This analysis reveals how pilots allocate attention to key flight parameters on the Electronic Flight Instrument System (EFIS).")
+        plot_fixation_distribution(fixdataEfis, "EFIS Fixation Duration Distribution")
+        plot_fixation_time_series(fixdataEfis, "EFIS Fixation Duration Over Time")
+        plot_fixation_heatmap(fixdataEfis, "EFIS Fixation Focus Heatmap")
+        
+    elif dataset_name == "PFD":
+        st.write("### PFD Dataset Analysis")
+        st.write("This analysis helps understand how pilots monitor essential flight indicators on the Primary Flight Display (PFD).")
+        plot_fixation_distribution(fixdataPfd, "PFD Fixation Duration Distribution")
+        plot_fixation_time_series(fixdataPfd, "PFD Fixation Duration Over Time")
+        plot_fixation_heatmap(fixdataPfd, "PFD Fixation Focus Heatmap")
 
-# Combine data for different surfaces
-ecam_pipe = fixdataEcam[["duration [ms]"]].rename(columns={"duration [ms]": "ECAM"})
-pfd_pipe = fixdataPfd[["duration [ms]"]].rename(columns={"duration [ms]": "PFD"})
-efis_pipe = fixdataEfis[["duration [ms]"]].rename(columns={"duration [ms]": "EFIS"})
-all_surfaces = pd.concat([ecam_pipe, pfd_pipe, efis_pipe], axis=1)
+# Sidebar for dataset selection
+st.sidebar.title("Data Selection and Model Training")
+dataset_name = st.sidebar.selectbox("Choose a dataset to analyze", ["ECAM", "EFIS", "PFD"])
 
-st.write("### Combined Data for Different Surfaces")
-st.write(all_surfaces.head())
+if st.sidebar.button('Show Dashboard'):
+    display_dashboard(dataset_name)
 
 # Model Training and Evaluation
 def train_and_evaluate(surface, model_type):
@@ -102,20 +125,11 @@ def train_and_evaluate(surface, model_type):
     r2 = model.score(X, y)
     return rmse_train, rmse_test, r2
 
-st.sidebar.title("Model Training and Evaluation")
-surface = st.sidebar.selectbox('Select Surface', ['ECAM', 'PFD', 'EFIS'])
-model_type = st.sidebar.selectbox('Select Model', ['Linear Regression', 'ANN'])
+surface = st.sidebar.selectbox('Select Surface for Model', ['ECAM', 'PFD', 'EFIS'])
+model_type = st.sidebar.selectbox('Select Model Type', ['Linear Regression', 'ANN'])
 if st.sidebar.button('Run Model'):
     rmse_train, rmse_test, r2 = train_and_evaluate(surface, model_type)
     st.write(f"### Results for {model_type} on {surface}")
     st.write(f'Training RMSE: {rmse_train}')
     st.write(f'Testing RMSE: {rmse_test}')
     st.write(f'R²: {r2}')
-
-def display_dashboard():
-    st.write("### Dashboard")
-    st.write('Dashboard Content Here')
-    # Additional dashboard logic goes here
-
-if st.sidebar.button('Show Dashboard'):
-    display_dashboard()
