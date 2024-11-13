@@ -3,8 +3,8 @@ A view into pilot performance using eye-tracking data and the broader focus on f
 
 # This is a Streamlit Data Visualization App
 
-This is an open-source Streamlit app for visualizing Pilot in-flight eye tracking data data.
-This is a deployment built to work with a Azure blob storage container
+This is an open-source Streamlit app for visualizing pilot in-flight eye-tracking data.
+This is a deployment built to work with an Azure blob storage container.
 
 ## Prerequisites
 - Azure account with storage and web app permissions
@@ -21,7 +21,7 @@ This is a deployment built to work with a Azure blob storage container
 ## Don't forget to do the following once cloned
 pip install -r requirements.txt
 
-You can also download the files to you azure blob storage and then
+You can also download the files to your Azure blob storage.
 
 ## Set up your env variables for Axure
 export AZURE_STORAGE_CONNECTION_STRING="YourAzureConnectionString"
