@@ -11,23 +11,40 @@ from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
 
 # Load data from local- v1
-@st.cache_data
-def load_data():
-    fixdataEcam = pd.read_csv("D:\\PilotVision_Proj\\fixdataEcam.csv")  # Update with your actual path
-    fixdataPfd = pd.read_csv("D:\\PilotVision_Proj\\fixdataPfd.csv")    #      ""
-    fixdataEfis = pd.read_csv("D:\\PilotVision_Proj\\fixdataEfis.csv")  #      ""
-    return fixdataEcam, fixdataPfd, fixdataEfis
+# @st.cache_data
+# def load_data():
+    # fixdataEcam = pd.read_csv("D:\\PilotVision_Proj\\fixdataEcam.csv")  # Update with your actual path
+    # fixdataPfd = pd.read_csv("D:\\PilotVision_Proj\\fixdataPfd.csv")    #      ""
+    # fixdataEfis = pd.read_csv("D:\\PilotVision_Proj\\fixdataEfis.csv")  #      ""
+     #return fixdataEcam, fixdataPfd, fixdataEfis
 
-fixdataEcam, fixdataPfd, fixdataEfis = load_data()
-
+# fixdataEcam, fixdataPfd, fixdataEfis = load_data()
 
 # Load data from Azure Blob Storage - v2
 
 # Set up connection to Azure Blob Storage
 connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+if not connection_string:
+    raise ValueError("AZURE_STORAGE_CONNECTION_STRING environment variable is not set or is empty.")
 
 # Initializing BlobServiceClient with connection string
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+
+# Function to load a CSV from Azure Blob Storage
+def load_data_from_blob(blob_name):
+    container_name = "pilotvisiondata" 
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    download_stream = blob_client.download_blob()
+    data = download_stream.readall()
+    return pd.read_csv(StringIO(data.decode('utf-8')))  # Adjust encoding as needed
+
+# Example usage in the Streamlit app
+st.title("PilotVision Data Analysis")
+
+# Load datasets from Azure Blob Storage
+fixdataEcam = load_data_from_blob("fixdataEcam.csv")
+fixdataPfd = load_data_from_blob("fixdataPfd.csv")
+fixdataEfis = load_data_from_blob("fixdataEfis.csv")
 
 # Data Availability Check
 def verify_data_availability(data, name):
@@ -39,18 +56,6 @@ def verify_data_availability(data, name):
 verify_data_availability(fixdataEcam, "ECAM")
 verify_data_availability(fixdataPfd, "PFD")
 verify_data_availability(fixdataEfis, "EFIS")
-
-
-def load_data_from_blob(blob_name):
-    container_name = "pilotvisiondata"
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
-    data = blob_client.download_blob().readall()
-    return pd.read_csv(StringIO(data.decode('utf-8')))
-
-# Load datasets from Azure Blob Storage
-fixdataEcam = load_data_from_blob("fixdataEcam.csv")
-fixdataPfd = load_data_from_blob("fixdataPfd.csv")
-fixdataEfis = load_data_from_blob("fixdataEfis.csv")
 
 
 # Data upload status check
