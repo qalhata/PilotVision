@@ -12,6 +12,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import Normalizer
 from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
+from sklearn.preprocessing import StandardScaler, Normalizer
+from sklearn.metrics import mean_squared_error, r2_score
 
 # Set Streamlit configurations
 # st.set_option('deprecation.showPyplotGlobalUse', False)
@@ -129,29 +131,61 @@ dataset_name = st.sidebar.selectbox("Choose a dataset to analyze", ["ECAM", "EFI
 if st.sidebar.button('Show Dashboard'):
     display_dashboard(dataset_name)
 
-# Model Training and Evaluation
-def train_and_evaluate(surface, model_type):
-    data = {"ECAM": fixdataEcam, "PFD": fixdataPfd, "EFIS": fixdataEfis}[surface]
+# Step 1: Data Preparation
+def prepare_data(data, target_column="fixation x [normalized]"):
+    """Prepares data for model training and testing by splitting and scaling."""
     X = data[["duration [ms]"]]
-    y = data["fixation x [normalized]"]
+    y = data[target_column]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
-    sc = Normalizer()
-    X_train = sc.fit_transform(X_train)
-    X_test = sc.transform(X_test)
+    scaler = StandardScaler()  # Can switch to other scalers if needed
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
+    return X_train, X_test, y_train, y_test
 
-    model = LinearRegression() if model_type == 'Linear Regression' else MLPRegressor(activation='logistic', solver='lbfgs', max_iter=500000)
+# Step 2: Model Definition
+def get_model(model_type):
+    """Returns the model based on the selected model type."""
+    if model_type == 'Linear Regression':
+        return LinearRegression()
+    elif model_type == 'ANN':
+        return MLPRegressor(hidden_layer_sizes=(50, 30), activation='relu', solver='adam', max_iter=1000)
+    # Additional models can be added here
+    else:
+        raise ValueError(f"Model type '{model_type}' is not supported.")
+
+# Step 3: Model Training and Evaluation
+def train_and_evaluate_model(model, X_train, X_test, y_train, y_test):
+    """Trains and evaluates the model, returning evaluation metrics."""
     model.fit(X_train, y_train)
-    y_pred_test = model.predict(X_test)
     y_pred_train = model.predict(X_train)
+    y_pred_test = model.predict(X_test)
     rmse_train = np.sqrt(mean_squared_error(y_train, y_pred_train))
     rmse_test = np.sqrt(mean_squared_error(y_test, y_pred_test))
-    r2 = model.score(X, y)
+    r2 = r2_score(y_test, y_pred_test)
     return rmse_train, rmse_test, r2
 
-surface = st.sidebar.selectbox('Select Surface for Model', ['ECAM', 'PFD', 'EFIS'])
+# Streamlit UI for Model Training and Evaluation
+st.sidebar.title("Model Training and Evaluation")
+
+# Surface Selection
+surface = st.sidebar.selectbox('Select Surface', ['ECAM', 'PFD', 'EFIS'])
+data = {"ECAM": fixdataEcam, "PFD": fixdataPfd, "EFIS": fixdataEfis}[surface]
+
+# Model Selection
 model_type = st.sidebar.selectbox('Select Model Type', ['Linear Regression', 'ANN'])
+
+# Run Model Button
 if st.sidebar.button('Run Model'):
-    rmse_train, rmse_test, r2 = train_and_evaluate(surface, model_type)
+    # Data Preparation
+    X_train, X_test, y_train, y_test = prepare_data(data)
+    
+    # Get Model
+    model = get_model(model_type)
+    
+    # Train and Evaluate Model
+    rmse_train, rmse_test, r2 = train_and_evaluate_model(model, X_train, X_test, y_train, y_test)
+    
+    # Display Results
     st.write(f"### Results for {model_type} on {surface}")
     st.write(f'Training RMSE: {rmse_train}')
     st.write(f'Testing RMSE: {rmse_test}')
