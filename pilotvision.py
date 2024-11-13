@@ -95,7 +95,7 @@ def plot_fixation_time_series(data, title):
 def plot_fixation_heatmap(data, title):
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.kdeplot(x=data['fixation x [normalized]'], y=data['fixation y [normalized]'],
-                cmap="Reds", shade=True, bw_adjust=0.5, ax=ax)
+                cmap="Reds", fill=True, bw_adjust=0.5, ax=ax)
     ax.set_title(title)
     ax.set_xlabel("X Coordinate [Normalized]")
     ax.set_ylabel("Y Coordinate [Normalized]")
