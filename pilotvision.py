@@ -11,26 +11,17 @@ from sklearn.preprocessing import Normalizer
 from sklearn.metrics import mean_squared_error
 from sklearn.neural_network import MLPRegressor
 
-# Load data from local- v1
-# @st.cache_data
-# def load_data():
-    # fixdataEcam = pd.read_csv("D:\\PilotVision_Proj\\fixdataEcam.csv")  # Update with your actual path
-    # fixdataPfd = pd.read_csv("D:\\PilotVision_Proj\\fixdataPfd.csv")    #      ""
-    # fixdataEfis = pd.read_csv("D:\\PilotVision_Proj\\fixdataEfis.csv")  #      ""
-     #return fixdataEcam, fixdataPfd, fixdataEfis
-
-# fixdataEcam, fixdataPfd, fixdataEfis = load_data()
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Load data from Azure Blob Storage - v2
-# Set up connection to Azure Blob Storage
+# Set up a connection to Azure Blob Storage
 connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
 if not connection_string:
     raise ValueError("AZURE_STORAGE_CONNECTION_STRING environment variable is not set or is empty.")
 
-# Initializing BlobServiceClient with connection string
+# Initializing BlobServiceClient with the connection string
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)
 
 # Function to load a CSV from Azure Blob Storage
